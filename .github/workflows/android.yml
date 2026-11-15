@@ -19,11 +19,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Setup Android SDK
-        run: |
-          echo "y" | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses
-
+          
       - name: Install Android SDK 36
         run: |
           sdkmanager --install "platforms;android-36"
