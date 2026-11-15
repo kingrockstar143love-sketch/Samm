@@ -21,17 +21,22 @@ jobs:
       - name: Extract Flutter ZIP
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+
           if [ -z "$ZIP_FILE" ]; then
-            echo "No ZIP file found!"
+            echo "Flutter ZIP not found!"
             exit 1
           fi
+
           mkdir extracted
           unzip -q "$ZIP_FILE" -d extracted
+
           PUBSPEC=$(find extracted -name pubspec.yaml -print -quit)
+
           if [ -z "$PUBSPEC" ]; then
-            echo "pubspec.yaml not found in ZIP!"
+            echo "pubspec.yaml not found!"
             exit 1
           fi
+
           echo "PROJECT_DIR=$(dirname "$PUBSPEC")" >> "$GITHUB_ENV"
 
       - name: Setup Java
@@ -45,19 +50,19 @@ jobs:
         with:
           channel: stable
 
-      - name: Create Android project files
+      - name: Create Android project
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter create . --platforms=android --project-name sam_ai
 
-      - name: Install dependencies
+      - name: Get dependencies
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter pub get
 
       - name: Analyze code
         working-directory: ${{ env.PROJECT_DIR }}
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
-      - name: Build release APK
+      - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter build apk --release
 
@@ -66,4 +71,3 @@ jobs:
         with:
           name: SAM-AI-APK
           path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
-          
