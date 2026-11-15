@@ -1,0 +1,72 @@
+
+name: SAM.AI Android APK Build
+
+on:
+  workflow_dispatch:
+    push:
+      branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          
+      - name: Install Android SDK 36
+        run: |
+          sdkmanager --install "platforms;android-36"
+          yes | sdkmanager --licenses
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android files
+        run: flutter create . --platforms=android --project-name=sam_ai
+
+      - name: Set compileSdk to 36
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          files = [
+              Path("android/app/build.gradle"),
+              Path("android/app/build.gradle.kts")
+          ]
+
+          found = False
+          for path in files:
+              if path.exists():
+                  content = path.read_text()
+                  updated, count = re.subn(r'compileSdk\s+([0-9]+)', 'compileSdk 36', content)
+                  if count > 0:
+                      path.write_text(updated)
+                      print(f"Updated {path}")
+                      found = True
+          if not found:
+              print("Warning: Could not find build.gradle to update compileSdk")
+          PY
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          
